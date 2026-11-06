@@ -86,7 +86,11 @@ func run(cli CLI) error {
 		if err != nil {
 			return err
 		}
-		subs = []string{parseChoice(choice)}
+		suffix, err := parseChoice(choice)
+		if err != nil {
+			return err
+		}
+		subs = []string{suffix}
 	}
 	for _, s := range subs {
 		fmt.Fprintln(stdout, "repo:"+repoSegment(info, immutable)+":"+s)
@@ -142,11 +146,14 @@ func refSuffix(ref string) string {
 }
 
 // parseChoice accepts a picked candidate as-is and treats free text as a ref.
-func parseChoice(s string) string {
-	if strings.HasPrefix(s, "environment:") || strings.HasPrefix(s, "ref:") {
-		return s
+func parseChoice(s string) (string, error) {
+	if s == "environment:" || s == "ref:" {
+		return "", fmt.Errorf("%q needs a name after the colon", s)
 	}
-	return refSuffix(s)
+	if strings.HasPrefix(s, "environment:") || strings.HasPrefix(s, "ref:") {
+		return s, nil
+	}
+	return refSuffix(s), nil
 }
 
 // candidates lists sub suffixes: environments, pull_request, refs and every parent-path glob.

@@ -89,13 +89,14 @@ Rationale: [ADR 1](docs/adr/0001-immutable-subject-format-by-default.md),
 
 Pushing a `v*` tag builds binaries for all platforms via
 [gh-extension-precompile](https://github.com/cli/gh-extension-precompile), with GitHub build
-provenance attestations and cosign keyless signatures (`*.sigstore.json`). Verify a download:
+provenance attestations and cosign keyless signatures (`<platform>.sigstore.json`). Verify a
+download, e.g. `gh release download v0.1.3 -R jabbrwcky/gh-sub-pattern -p "darwin-arm64*"`:
 
 ```sh
-gh attestation verify gh-sub-pattern_v1.0.0_darwin-arm64 --repo jabbrwcky/gh-sub-pattern
+gh attestation verify darwin-arm64 --repo jabbrwcky/gh-sub-pattern
 
-cosign verify-blob gh-sub-pattern_v1.0.0_darwin-arm64 \
-  --bundle gh-sub-pattern_v1.0.0_darwin-arm64.sigstore.json \
+cosign verify-blob darwin-arm64 \
+  --bundle darwin-arm64.sigstore.json \
   --certificate-identity-regexp "^https://github.com/jabbrwcky/gh-sub-pattern/" \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
