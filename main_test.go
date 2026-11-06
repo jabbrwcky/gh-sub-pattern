@@ -20,8 +20,13 @@ func TestParseChoice(t *testing.T) {
 		"ref:refs/heads/main":   "ref:refs/heads/main",
 		"ref:refs/heads/feat/*": "ref:refs/heads/feat/*",
 	} {
-		if got := parseChoice(in); got != want {
-			t.Errorf("parseChoice(%q) = %q, want %q", in, got, want)
+		if got, err := parseChoice(in); err != nil || got != want {
+			t.Errorf("parseChoice(%q) = %q, %v, want %q", in, got, err, want)
+		}
+	}
+	for _, in := range []string{"environment:", "ref:"} {
+		if _, err := parseChoice(in); err == nil {
+			t.Errorf("parseChoice(%q): expected error", in)
 		}
 	}
 }
