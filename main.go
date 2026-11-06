@@ -82,15 +82,17 @@ func run(cli CLI) error {
 		if !term.IsTerminal(os.Stdin) {
 			return errors.New("no --environment, --ref(s) or --tag(s) given and stdin is not a terminal")
 		}
-		choice, err := pick(repo.Host, fullName)
+		choices, err := pick(repo.Host, fullName)
 		if err != nil {
 			return err
 		}
-		suffix, err := parseChoice(choice)
-		if err != nil {
-			return err
+		for _, c := range choices {
+			suffix, err := parseChoice(c)
+			if err != nil {
+				return err
+			}
+			subs = append(subs, suffix)
 		}
-		subs = []string{suffix}
 	}
 	for _, s := range subs {
 		fmt.Fprintln(stdout, "repo:"+repoSegment(info, immutable)+":"+s)
@@ -183,7 +185,7 @@ func candidates(envs, branches, tags []string) []string {
 	return out
 }
 
-func pick(host, fullName string) (string, error) {
+func pick(host, fullName string) ([]string, error) {
 	list := func(path, jq string) []string {
 		out, _, err := gh.Exec("api", "--hostname", host, "--paginate", "repos/"+fullName+"/"+path, "--jq", jq)
 		if err != nil {
@@ -200,16 +202,23 @@ func pick(host, fullName string) (string, error) {
 		return fzf(items)
 	}
 	// shortcut: no free-text glob without fzf; add prompter.Input if non-fzf users need it.
-	idx, err := prompter.New(os.Stdin, os.Stderr, os.Stderr).Select("sub for "+fullName, "", items)
+	idxs, err := prompter.New(os.Stdin, os.Stderr, os.Stderr).MultiSelect("sub for "+fullName, nil, items)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return items[idx], nil
+	if len(idxs) == 0 {
+		return nil, errors.New("nothing selected")
+	}
+	picked := make([]string, len(idxs))
+	for i, idx := range idxs {
+		picked[i] = items[idx]
+	}
+	return picked, nil
 }
 
-func fzf(items []string) (string, error) {
-	cmd := exec.Command("fzf", "--print-query", "--exact", "--no-multi", "--prompt", "sub> ",
-		"--header", "Pick a candidate or type a ref/glob (e.g. release/*) and press enter")
+func fzf(items []string) ([]string, error) {
+	cmd := exec.Command("fzf", "--print-query", "--exact", "--multi", "--prompt", "sub> ",
+		"--header", "Tab marks several candidates; or type a ref/glob (e.g. release/*). Enter to finish")
 	cmd.Stdin = strings.NewReader(strings.Join(items, "\n"))
 	cmd.Stderr = os.Stderr
 	out, err := cmd.Output()
@@ -218,11 +227,11 @@ func fzf(items []string) (string, error) {
 	noMatch := errors.As(err, &exit) && exit.ExitCode() == 1
 	switch {
 	case err == nil && len(lines) > 1:
-		return lines[1], nil
+		return lines[1:], nil
 	case (err == nil || noMatch) && lines[0] != "":
-		return lines[0], nil // free-text query
+		return lines[:1], nil // free-text query
 	default:
-		return "", errors.New("selection cancelled")
+		return nil, errors.New("selection cancelled")
 	}
 }
 
