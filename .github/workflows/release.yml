@@ -27,9 +27,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
           REPO: ${{ github.repository }}
+        # Separate dir: precompile already left its build output in dist/.
         run: |
-          gh release download "$TAG" --repo "$REPO" --dir dist
-          for f in dist/*; do
+          gh release download "$TAG" --repo "$REPO" --dir signed
+          for f in signed/*; do
             cosign sign-blob --yes --bundle "$f.sigstore.json" "$f"
           done
-          gh release upload "$TAG" --repo "$REPO" dist/*.sigstore.json
+          gh release upload "$TAG" --repo "$REPO" signed/*.sigstore.json
