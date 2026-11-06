@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -127,17 +128,19 @@ func TestResolveRepoCurrent(t *testing.T) {
 
 func TestFzf(t *testing.T) {
 	for name, tc := range map[string]struct {
-		script, want string
-		wantErr      bool
+		script  string
+		want    []string
+		wantErr bool
 	}{
-		"selection": {`printf 'ma\nref:refs/heads/main\n'`, "ref:refs/heads/main", false},
-		"free text": {`printf 'release/2.x/*\n'; exit 1`, "release/2.x/*", false},
-		"cancelled": {`exit 130`, "", true},
+		"selection": {`printf 'ma\nref:refs/heads/main\n'`, []string{"ref:refs/heads/main"}, false},
+		"multi":     {`printf '\npull_request\nref:refs/tags/*\n'`, []string{"pull_request", "ref:refs/tags/*"}, false},
+		"free text": {`printf 'release/2.x/*\n'; exit 1`, []string{"release/2.x/*"}, false},
+		"cancelled": {`exit 130`, nil, true},
 	} {
 		t.Run(name, func(t *testing.T) {
 			fakeBin(t, "fzf", "cat >/dev/null\n"+tc.script)
 			got, err := fzf([]string{"ref:refs/heads/main"})
-			if (err != nil) != tc.wantErr || got != tc.want {
+			if (err != nil) != tc.wantErr || !slices.Equal(got, tc.want) {
 				t.Errorf("got %q, %v", got, err)
 			}
 		})
@@ -154,7 +157,7 @@ esac`))
 	fakeBin(t, "fzf", `cat > "`+cands+`"; printf '\nref:refs/heads/release/*\n'`)
 
 	got, err := pick("github.com", "octo-org/octo-repo")
-	if err != nil || got != "ref:refs/heads/release/*" {
+	if err != nil || !slices.Equal(got, []string{"ref:refs/heads/release/*"}) {
 		t.Fatalf("got %q, %v", got, err)
 	}
 	listed, _ := os.ReadFile(cands)

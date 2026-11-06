@@ -64,8 +64,9 @@ $ gh sub-pattern -r main --tags v | jq -R . | jq -s .
 
 Without any target flag and with a terminal attached, the extension lists the repository's
 environments, branches, tags, `pull_request` and derived prefix globs (e.g. `release/*`) in
-[fzf](https://github.com/junegunn/fzf). Pick one, or type your own ref/glob and press enter.
-Without fzf it falls back to gh's built-in selector (no free-text input).
+[fzf](https://github.com/junegunn/fzf). Mark several candidates with Tab, or type your own
+ref/glob; Enter prints one pattern per selection. Without fzf it falls back to gh's built-in
+multi-select (no free-text input).
 
 ## Subject format
 
