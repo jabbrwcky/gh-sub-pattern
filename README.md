@@ -82,6 +82,9 @@ If the repository uses a custom `sub` template, a warning is printed: the patter
 default template and will not match. GitHub Enterprise Server has no immutable subjects; use
 `--mutable` there.
 
+Rationale: [ADR 1](docs/adr/0001-immutable-subject-format-by-default.md),
+[ADR 2](docs/adr/0002-repository-setting-overrides-format-flag.md).
+
 ## Releases
 
 Pushing a `v*` tag builds binaries for all platforms via
