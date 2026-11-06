@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -34,6 +35,12 @@ type repoInfo struct {
 	} `json:"owner"`
 }
 
+// Swapped in tests.
+var (
+	newClient           = func(host string) (*api.RESTClient, error) { return api.NewRESTClient(api.ClientOptions{Host: host}) }
+	stdout    io.Writer = os.Stdout
+)
+
 func main() {
 	var cli CLI
 	kong.Parse(&cli,
@@ -50,7 +57,7 @@ func run(cli CLI) error {
 	if err != nil {
 		return err
 	}
-	client, err := api.NewRESTClient(api.ClientOptions{Host: repo.Host})
+	client, err := newClient(repo.Host)
 	if err != nil {
 		return err
 	}
@@ -82,7 +89,7 @@ func run(cli CLI) error {
 		subs = []string{parseChoice(choice)}
 	}
 	for _, s := range subs {
-		fmt.Println("repo:" + repoSegment(info, immutable) + ":" + s)
+		fmt.Fprintln(stdout, "repo:"+repoSegment(info, immutable)+":"+s)
 	}
 	return nil
 }

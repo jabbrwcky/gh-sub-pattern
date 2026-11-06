@@ -82,6 +82,21 @@ If the repository uses a custom `sub` template, a warning is printed: the patter
 default template and will not match. GitHub Enterprise Server has no immutable subjects; use
 `--mutable` there.
 
+## Releases
+
+Pushing a `v*` tag builds binaries for all platforms via
+[gh-extension-precompile](https://github.com/cli/gh-extension-precompile), with GitHub build
+provenance attestations and cosign keyless signatures (`*.sigstore.json`). Verify a download:
+
+```sh
+gh attestation verify gh-sub-pattern_v1.0.0_darwin-arm64 --repo jabbrwcky/gh-sub-pattern
+
+cosign verify-blob gh-sub-pattern_v1.0.0_darwin-arm64 \
+  --bundle gh-sub-pattern_v1.0.0_darwin-arm64.sigstore.json \
+  --certificate-identity-regexp "^https://github.com/jabbrwcky/gh-sub-pattern/" \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com
+```
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md), [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) and
