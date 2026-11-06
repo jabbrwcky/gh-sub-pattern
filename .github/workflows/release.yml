@@ -1,8 +1,10 @@
 name: release
+
 on:
   push:
     tags:
       - "v*"
+
 permissions:
   contents: write
   id-token: write
@@ -12,8 +14,22 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: cli/gh-extension-precompile@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: cli/gh-extension-precompile@76961aa3bd1123d0a6fd42d0a41aca0696937c39 # v2.2.0
         with:
           generate_attestations: true
           go_version_file: go.mod
+      - uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
+      - name: Sign release assets (cosign keyless)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh release download "$TAG" --repo "$REPO" --dir dist
+          for f in dist/*; do
+            cosign sign-blob --yes --bundle "$f.sigstore.json" "$f"
+          done
+          gh release upload "$TAG" --repo "$REPO" dist/*.sigstore.json
